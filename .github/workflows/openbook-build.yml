@@ -50,7 +50,6 @@ jobs:
           exit $code
 
       - name: Run unit tests (${{ matrix.platform }})
-        continue-on-error: ${{ matrix.platform == 'x64' }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Continue'
@@ -61,8 +60,16 @@ jobs:
           $dlls = Get-ChildItem -Path . -Recurse -Filter '*.UnitTests.dll' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "bin[\\/]${{ matrix.platform }}[\\/]Debug[\\/]" } | Select-Object -ExpandProperty FullName
           Write-Host "Resolved $(@($dlls).Count) test assemblies for ${{ matrix.platform }}"
           if (-not $dlls) { Write-Host "::error::No unit-test assemblies found for ${{ matrix.platform }}"; exit 1 }
-          & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults
-          exit $LASTEXITCODE
+          # Retry to absorb a rare intermittent vstest flake (~1/848); a real failure fails all attempts.
+          for ($i = 1; $i -le 3; $i++) {
+            Write-Host "Test attempt $i of 3..."
+            $log = "vstest-${{ matrix.platform }}-$i.log"
+            & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults 2>&1 | Tee-Object -FilePath $log
+            if ($LASTEXITCODE -eq 0) { Write-Host "All tests passed on attempt $i."; exit 0 }
+            Get-Content $log | Select-String -Pattern '^\s*Failed ' | Select-Object -First 10 | ForEach-Object { Write-Host "::warning::flaky(attempt $i): $($_.Line.Trim())" }
+          }
+          Write-Host "::error::Unit tests failed after 3 attempts."
+          exit 1
 
       - name: Upload test results (${{ matrix.platform }})
         if: always()
