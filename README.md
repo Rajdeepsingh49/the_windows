@@ -2,6 +2,12 @@
 
 Refactored version of Safe Exam Browser for Windows with Chromium as integrated browser engine.
 
+> [!NOTE]
+> **This is an internal open-book fork**, not the official Safe Exam Browser. It is built for
+> open-book exams where nothing is visible to the examiner and students may use any software.
+> See [docs/OPEN-BOOK.md](docs/OPEN-BOOK.md) for intent, editing boundaries, status, and build
+> instructions. For anything official, use the upstream repository.
+
 ## Requirements
 
 > [!NOTE]  
