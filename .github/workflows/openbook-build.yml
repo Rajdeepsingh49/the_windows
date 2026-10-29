@@ -1,12 +1,12 @@
 name: Build & Test SEB Open-Book (Windows)
 
-# Cloud build + test for the open-book fork. There is no way to build or run this
-# Win32 / .NET Framework 4.8 / WPF application on macOS, so verification happens here.
+# Cloud build + test for the open-book fork (no way to build/run this Win32/.NET app on macOS).
 #
-# The GATE (must pass) compiles every C# project and runs the full MSTest suite. The two
-# WiX installer projects (Setup, SetupBundle) are built in a SEPARATE best-effort step,
-# because GitHub's windows-2022 image no longer ships the WiX toolset and installer
-# packaging must not block the real "does the code compile and pass tests" signal.
+# GATE (must pass): compile every C# project and run the full MSTest suite in Debug, where the
+# solution builds the test projects (they have no Release build entries). WiX is not needed here.
+#
+# INSTALLER (best effort, x64): install WiX v3 and build Setup.msi in Release via the solution,
+# then publish it to the 'openbook-latest-x64' release for a direct download link.
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
       - name: NuGet restore
         run: nuget restore SafeExamBrowser.sln
 
-      - name: Build app + test projects, no installer (${{ matrix.platform }})
+      - name: Build app + test projects in Debug, no installer (${{ matrix.platform }})
         shell: pwsh
         run: |
           $log = "build-${{ matrix.platform }}.log"
@@ -58,16 +58,13 @@ jobs:
           $vstest = Join-Path $vs 'Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
           if (-not (Test-Path $vstest)) { Write-Host "::error::vstest.console.exe not found at $vstest"; exit 1 }
           $all = Get-ChildItem -Path . -Recurse -Filter '*.UnitTests.dll' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-          Write-Host "Total *.UnitTests.dll found anywhere: $($all.Count)"
-          $all | Select-Object -First 25 | ForEach-Object { Write-Host "::error::dll: $_" }
           $dlls = $all | Where-Object { $_ -match "bin[\\/]${{ matrix.platform }}[\\/]Debug[\\/]" }
-          if (-not $dlls) { $dlls = $all | Where-Object { $_ -match "[\\/]Debug[\\/]" } }
           Write-Host "Resolved $(@($dlls).Count) test assemblies for ${{ matrix.platform }}"
           if (-not $dlls) { Write-Host "::error::No unit-test assemblies found for ${{ matrix.platform }}"; exit 1 }
           $log = "vstest-${{ matrix.platform }}.log"
           & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults 2>&1 | Tee-Object -FilePath $log
           $code = $LASTEXITCODE
-          Get-Content $log | Select-String -Pattern 'Failed!|Passed!|Total tests|Failed\s+\d|Failed:|error|Exception|No test (is|source)|could not|Unable' | Select-Object -First 30 | ForEach-Object { $l = $_.Line.Trim(); if ($l) { Write-Host "::error::$l" } }
+          Get-Content $log | Select-String -Pattern '^\s*Failed |Error Message|Assert|Exception|Total tests|Failed:|No test (is|source)' | Select-Object -First 30 | ForEach-Object { $l = $_.Line.Trim(); if ($l) { Write-Host "::error::$l" } }
           exit $code
 
       - name: Upload test results (${{ matrix.platform }})
@@ -78,44 +75,20 @@ jobs:
           path: TestResults/*.trx
           if-no-files-found: warn
 
-      - name: Publish CI diagnostics to a release (x64, always)
-        if: always() && matrix.platform == 'x64'
-        continue-on-error: true
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $diag = "ci-diag.txt"
-          "commit ${{ github.sha }}" | Out-File $diag
-          "=== all *.UnitTests.dll ===" | Out-File $diag -Append
-          Get-ChildItem -Recurse -Filter '*.UnitTests.dll' -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName } | Out-File $diag -Append
-          "=== *.UnitTests Release output dirs ===" | Out-File $diag -Append
-          Get-ChildItem -Recurse -Directory -Filter Release -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'UnitTests' } | ForEach-Object { $_.FullName } | Out-File $diag -Append
-          "=== build-x64.log tail ===" | Out-File $diag -Append
-          if (Test-Path build-x64.log) { Get-Content build-x64.log -Tail 120 | Out-File $diag -Append } else { "(no build-x64.log)" | Out-File $diag -Append }
-          "=== vstest-x64.log tail ===" | Out-File $diag -Append
-          if (Test-Path vstest-x64.log) { Get-Content vstest-x64.log -Tail 120 | Out-File $diag -Append } else { "(no vstest-x64.log)" | Out-File $diag -Append }
-          gh release create ci-diagnostics --title "CI diagnostics (transient)" --notes "Transient CI build/test logs for debugging." 2>$null
-          gh release upload ci-diagnostics $diag --clobber
-          if (Test-Path vstest-x64.log) { gh release upload ci-diagnostics vstest-x64.log --clobber }
-          if (Test-Path build-x64.log) { gh release upload ci-diagnostics build-x64.log --clobber }
-          Write-Host "diagnostics uploaded"
-
-      - name: Install WiX Toolset v3 (for the installer)
+      - name: Install WiX Toolset v3 (for the installer, x64)
         if: matrix.platform == 'x64'
         continue-on-error: true
-        run: choco install wixtoolset --version 3.14.1 -y --no-progress
+        run: choco install wixtoolset -y --no-progress
 
-      - name: Build installer Setup.msi (x64, best effort)
+      - name: Build installer Setup.msi in Release (x64, best effort)
         if: matrix.platform == 'x64'
         continue-on-error: true
         shell: pwsh
         run: |
           $log = "installer-x64.log"
-          msbuild Setup\Setup.wixproj /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
-          $code = $LASTEXITCODE
-          Get-Content $log | Select-String -Pattern ': error|MSB\d{3,}|error :' | Select-Object -First 15 | ForEach-Object { $l = $_.Line.Trim(); Write-Host "::warning::installer: $l" }
-          Write-Host "installer msbuild exit code: $code"
+          msbuild SafeExamBrowser.sln /t:Setup /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
+          Write-Host "installer msbuild exit code: $LASTEXITCODE"
+          Get-Content $log | Select-String -Pattern ': error|MSB\d{3,}|error :|WiX|not installed' | Select-Object -First 25 | ForEach-Object { $l = $_.Line.Trim(); if ($l) { Write-Host "::warning::installer: $l" } }
 
       - name: Upload Setup.msi (x64)
         if: matrix.platform == 'x64'
@@ -138,3 +111,23 @@ jobs:
           gh release create openbook-latest-x64 --title "SEB Open-Book - latest x64 build" --notes "Automated build from commit ${{ github.sha }}. Testing build for open-book exams - not official SEB." 2>$null
           gh release upload openbook-latest-x64 "$msi" --clobber
           Write-Host "Published: https://github.com/${{ github.repository }}/releases/download/openbook-latest-x64/Setup.msi"
+
+      - name: Publish CI diagnostics to a release (x64, always)
+        if: always() && matrix.platform == 'x64'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $diag = "ci-diag.txt"
+          "commit ${{ github.sha }}" | Out-File $diag
+          "=== *.UnitTests.dll ===" | Out-File $diag -Append
+          Get-ChildItem -Recurse -Filter '*.UnitTests.dll' -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName } | Out-File $diag -Append
+          foreach ($f in 'build-x64.log','vstest-x64.log','installer-x64.log') {
+            "=== $f tail ===" | Out-File $diag -Append
+            if (Test-Path $f) { Get-Content $f -Tail 60 | Out-File $diag -Append } else { "(no $f)" | Out-File $diag -Append }
+          }
+          gh release create ci-diagnostics --title "CI diagnostics (transient)" --notes "Transient CI build/test logs for debugging." 2>$null
+          gh release upload ci-diagnostics $diag --clobber
+          foreach ($f in 'build-x64.log','vstest-x64.log','installer-x64.log') { if (Test-Path $f) { gh release upload ci-diagnostics $f --clobber } }
+          Write-Host "diagnostics uploaded"
