@@ -1,0 +1,45 @@
+name: Build SEB Open-Book (Windows)
+
+# Cloud build for the open-book fork. Mirrors the official AppVeyor recipe
+# (nuget restore + msbuild of the whole solution) so we get a compiled build
+# and a Setup.msi without needing a local Windows machine. Runs on every push.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Install WiX Toolset v3 (needed to build Setup.msi)
+        run: choco install wixtoolset -y --no-progress
+        continue-on-error: true
+
+      - name: NuGet restore
+        run: nuget restore SafeExamBrowser.sln
+
+      - name: Build solution (Release, ${{ matrix.platform }})
+        run: msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+
+      - name: Upload Setup.msi
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEB-OpenBook-${{ matrix.platform }}-Setup
+          path: Setup/bin/${{ matrix.platform }}/Release/Setup.msi
+          if-no-files-found: warn
