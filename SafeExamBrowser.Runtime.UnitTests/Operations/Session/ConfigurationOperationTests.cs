@@ -100,6 +100,31 @@ namespace SafeExamBrowser.Runtime.UnitTests.Operations.Session
 		}
 
 		[TestMethod]
+		public void Perform_MustDisableProctoringForOpenBook()
+		{
+			var settings = new AppSettings { ConfigurationMode = ConfigurationMode.Exam };
+			var url = @"http://www.safeexambrowser.org/whatever.seb";
+
+			settings.Proctoring.Enabled = true;
+			settings.Proctoring.ScreenProctoring.Enabled = true;
+			settings.Proctoring.ShowDisclaimer = true;
+			settings.Proctoring.ShowTaskbarNotification = true;
+
+			repository.Setup(r => r.TryLoadSettings(It.IsAny<Uri>(), out settings, It.IsAny<PasswordParameters>())).Returns(LoadStatus.Success);
+
+			var sut = new ConfigurationOperation(new[] { "abc.exe", url }, dependencies, fileSystem.Object, hashAlgorithm.Object, repository.Object, uiFactory.Object);
+			var result = sut.Perform();
+
+			// Open-book build: no matter what a configuration requests, examiner-facing proctoring
+			// must never be left enabled once the configuration is loaded.
+			Assert.AreEqual(OperationResult.Success, result);
+			Assert.IsFalse(context.Next.Settings.Proctoring.Enabled, "Remote proctoring must be forced off for the open-book build.");
+			Assert.IsFalse(context.Next.Settings.Proctoring.ScreenProctoring.Enabled, "Screen proctoring must be forced off for the open-book build.");
+			Assert.IsFalse(context.Next.Settings.Proctoring.ShowDisclaimer);
+			Assert.IsFalse(context.Next.Settings.Proctoring.ShowTaskbarNotification);
+		}
+
+		[TestMethod]
 		public void Perform_MustUseProgramDataAs2ndPrio()
 		{
 			var settings = default(AppSettings);
