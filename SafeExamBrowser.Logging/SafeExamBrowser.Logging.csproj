@@ -57,6 +57,9 @@
   <ItemGroup>
     <Compile Include="CrashLog.cs" />
     <Compile Include="DefaultLogFormatter.cs" />
+    <Compile Include="ExamLogFileWriter.cs" />
+    <Compile Include="ExamLogGate.cs" />
+    <Compile Include="LogPhase.cs" />
     <Compile Include="LogFileWriter.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="LogMessage.cs" />

@@ -17,6 +17,7 @@ using SafeExamBrowser.Configuration.Contracts;
 using SafeExamBrowser.Configuration.Contracts.Cryptography;
 using SafeExamBrowser.Core.Contracts.ResponsibilityModel;
 using SafeExamBrowser.Integrity.Contracts;
+using SafeExamBrowser.Logging;
 using SafeExamBrowser.Proctoring.Contracts;
 using SafeExamBrowser.Server.Contracts;
 using SafeExamBrowser.Settings;
@@ -46,6 +47,11 @@ namespace SafeExamBrowser.Client
 		/// The global application configuration.
 		/// </summary>
 		internal AppConfig AppConfig { get; set; }
+
+		/// <summary>
+		/// Open-book build: shared gate that controls what reaches the local log during the exam.
+		/// </summary>
+		internal ExamLogGate ExamLogGate { get; set; }
 
 		/// <summary>
 		/// The browser application.

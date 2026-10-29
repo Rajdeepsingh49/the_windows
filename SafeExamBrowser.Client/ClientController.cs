@@ -10,6 +10,7 @@ using SafeExamBrowser.Client.Responsibilities;
 using SafeExamBrowser.Communication.Contracts.Proxies;
 using SafeExamBrowser.Core.Contracts.OperationModel;
 using SafeExamBrowser.Core.Contracts.ResponsibilityModel;
+using SafeExamBrowser.Logging;
 using SafeExamBrowser.Logging.Contracts;
 using SafeExamBrowser.UserInterface.Contracts.Windows;
 
@@ -67,6 +68,13 @@ namespace SafeExamBrowser.Client
 				logger.Log(string.Empty);
 
 				DelegateClientReadyResponsibilities();
+
+				// Open-book build: the exam is now running - stop writing activity to the local log
+				// until shutdown (see ExamLogGate / docs/OPEN-BOOK.md, boundary 1).
+				if (context.ExamLogGate != null)
+				{
+					context.ExamLogGate.Phase = LogPhase.Running;
+				}
 			}
 
 			splashScreen.Hide();
@@ -76,6 +84,12 @@ namespace SafeExamBrowser.Client
 
 		internal void Terminate()
 		{
+			// Open-book build: shutdown is logged again (start-up and ending phases are written).
+			if (context.ExamLogGate != null)
+			{
+				context.ExamLogGate.Phase = LogPhase.Ending;
+			}
+
 			logger.Log(string.Empty);
 			logger.Info("Initiating shutdown procedure...");
 

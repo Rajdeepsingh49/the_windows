@@ -48,6 +48,7 @@ Prerequisites on the test machine: .NET Framework 4.8 runtime, Visual C++ 2015�
   no logs/pings/screenshots leave the machine; the session runs as a normal local session, and
   the runtime log shows "proctoring and SEB Server are disabled".
 - ☐ **[NOW]** Logs are written only locally (under the SEB app data / log folder); nothing is uploaded.
+- ☐ **[NOW]** During an exam (running phase), the client log records no browsing URLs, clipboard, downloads, or app/window switching; start-up and shutdown entries are still present (run an exam, visit a few pages, quit, then inspect the client log).
 - ☐ **[NOW]** Capture network traffic (e.g. Fiddler/Wireshark) during an exam: no traffic to any
   proctoring/SEB-Server endpoint; only the exam/browser URLs the student visits.
 

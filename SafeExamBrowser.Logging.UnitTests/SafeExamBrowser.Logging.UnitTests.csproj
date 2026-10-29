@@ -263,6 +263,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DefaultLogFormatterTests.cs" />
+    <Compile Include="ExamLogFileWriterTests.cs" />
     <Compile Include="LoggerTests.cs" />
     <Compile Include="ModuleLoggerTests.cs" />
     <Compile Include="NewLogContentType.cs" />

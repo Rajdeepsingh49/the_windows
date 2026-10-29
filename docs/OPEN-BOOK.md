@@ -41,7 +41,7 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | **Exam lock toggle + indicator** | A local lock/unlock shortcut with an on-screen indicator; starts locked by default. | Planned. |
 | **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | Planned. |
 | **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | Planned. |
-| **Logging** | Stays entirely local; nothing is uploaded. | Follows from removing SEB Server. |
+| **Logging** | Local-only; the student's running-phase activity (page URLs, clipboard, downloads, app/window switching) is not recorded, and nothing is uploaded. | **Done** — `ExamLogGate` + `ExamLogFileWriter` suppress the running phase in the client log; start-up and shutdown lines are kept, layout and wording unchanged (boundary 1). |
 
 See the commit history on `master` for the exact, reviewable diff against upstream
 (`git diff upstream/master`).

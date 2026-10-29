@@ -82,6 +82,7 @@ namespace SafeExamBrowser.Client
 
 		private IActionCenter actionCenter;
 		private ApplicationMonitor applicationMonitor;
+		private ExamLogGate examLogGate;
 		private ILogger logger;
 		private IMessageBox messageBox;
 		private INativeMethods nativeMethods;
@@ -111,6 +112,7 @@ namespace SafeExamBrowser.Client
 			uiFactory = BuildUserInterfaceFactory();
 			actionCenter = uiFactory.CreateActionCenter();
 			context = new ClientContext();
+			context.ExamLogGate = examLogGate;
 			messageBox = BuildMessageBox();
 			nativeMethods = new NativeMethods();
 			applicationMonitor = new ApplicationMonitor(TWO_SECONDS, ModuleLogger(nameof(ApplicationMonitor)), nativeMethods, processFactory);
@@ -242,7 +244,9 @@ namespace SafeExamBrowser.Client
 
 		private void InitializeLogging()
 		{
-			var logFileWriter = new LogFileWriter(new DefaultLogFormatter(), logFilePath);
+			examLogGate = new ExamLogGate();
+
+			var logFileWriter = new ExamLogFileWriter(new DefaultLogFormatter(), logFilePath, examLogGate);
 
 			logFileWriter.Initialize();
 
