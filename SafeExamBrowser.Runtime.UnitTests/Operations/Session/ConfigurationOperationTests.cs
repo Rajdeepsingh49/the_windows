@@ -125,6 +125,23 @@ namespace SafeExamBrowser.Runtime.UnitTests.Operations.Session
 		}
 
 		[TestMethod]
+		public void Perform_MustDisableServerSessionForOpenBook()
+		{
+			var settings = new AppSettings { ConfigurationMode = ConfigurationMode.Exam, SessionMode = SessionMode.Server };
+			var url = @"http://www.safeexambrowser.org/whatever.seb";
+
+			repository.Setup(r => r.TryLoadSettings(It.IsAny<Uri>(), out settings, It.IsAny<PasswordParameters>())).Returns(LoadStatus.Success);
+
+			var sut = new ConfigurationOperation(new[] { "abc.exe", url }, dependencies, fileSystem.Object, hashAlgorithm.Object, repository.Object, uiFactory.Object);
+			var result = sut.Perform();
+
+			// Open-book build: a SEB Server session must never be established, so no logs, pings,
+			// or screenshots can ever reach an examiner / server.
+			Assert.AreEqual(OperationResult.Success, result);
+			Assert.AreEqual(SessionMode.Normal, context.Next.Settings.SessionMode);
+		}
+
+		[TestMethod]
 		public void Perform_MustUseProgramDataAs2ndPrio()
 		{
 			var settings = default(AppSettings);

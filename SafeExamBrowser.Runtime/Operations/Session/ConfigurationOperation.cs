@@ -202,9 +202,10 @@ namespace SafeExamBrowser.Runtime.Operations.Session
 
 		/// <summary>
 		/// Open-book build: nothing is ever transmitted to or made visible to an examiner.
-		/// Remote and screen proctoring can never run, no matter what a loaded configuration
-		/// requests. This removes examiner surveillance only; it does not relax any restriction
-		/// a configuration places on the student (see docs/OPEN-BOOK.md, boundary 3).
+		/// Remote and screen proctoring can never run and no SEB Server session is ever
+		/// established, no matter what a loaded configuration requests. This removes examiner
+		/// surveillance only; it does not relax any restriction a configuration places on the
+		/// student (see docs/OPEN-BOOK.md, boundary 3).
 		/// </summary>
 		private void EnforceOpenBookPrivacy(AppSettings settings)
 		{
@@ -218,7 +219,9 @@ namespace SafeExamBrowser.Runtime.Operations.Session
 			settings.Proctoring.ShowDisclaimer = false;
 			settings.Proctoring.ShowTaskbarNotification = false;
 
-			Logger.Info("Open-book build: remote and screen proctoring are disabled - nothing is captured or transmitted to an examiner.");
+			settings.SessionMode = SessionMode.Normal;
+
+			Logger.Info("Open-book build: proctoring and SEB Server are disabled - nothing is captured, logged to, or transmitted to an examiner.");
 		}
 
 		private OperationResult HandleBrowserResource(Uri uri)
