@@ -131,7 +131,8 @@ git -C $(SolutionDir) checkout -- Setup/Components/Service.wxs</PostBuildEvent>
 	</Target>
 	-->
   <PropertyGroup>
-    <SignOutput>true</SignOutput>
+    <!-- Open-book fork: internal build is not code-signed (see Sign.ps1). -->
+    <SignOutput>false</SignOutput>
   </PropertyGroup>
   <Target Name="SignCabs">
     <Exec Command="signtool sign /sha1 ecac9df025f5d208f6190fc4d6f9d329576598c7 /sm /tr http://timestamp.digicert.com /td sha256 /fd sha256 &quot;%(SignCabs.FullPath)&quot;" />
