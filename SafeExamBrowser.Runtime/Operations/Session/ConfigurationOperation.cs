@@ -97,6 +97,7 @@ namespace SafeExamBrowser.Runtime.Operations.Session
 		{
 			Logger.Info("No valid configuration resource specified and no local client configuration found - loading default settings...");
 			Context.Next.Settings = repository.LoadDefaultSettings();
+			EnforceOpenBookPrivacy(Context.Next.Settings);
 
 			return OperationResult.Success;
 		}
@@ -174,6 +175,7 @@ namespace SafeExamBrowser.Runtime.Operations.Session
 				var isNewConfiguration = source == UriSource.CommandLine || source == UriSource.Reconfiguration;
 
 				Context.Next.Settings = settings;
+				EnforceOpenBookPrivacy(Context.Next.Settings);
 
 				if (status == LoadStatus.LoadWithBrowser)
 				{
@@ -196,6 +198,27 @@ namespace SafeExamBrowser.Runtime.Operations.Session
 			}
 
 			return result;
+		}
+
+		/// <summary>
+		/// Open-book build: nothing is ever transmitted to or made visible to an examiner.
+		/// Remote and screen proctoring can never run, no matter what a loaded configuration
+		/// requests. This removes examiner surveillance only; it does not relax any restriction
+		/// a configuration places on the student (see docs/OPEN-BOOK.md, boundary 3).
+		/// </summary>
+		private void EnforceOpenBookPrivacy(AppSettings settings)
+		{
+			if (settings == default)
+			{
+				return;
+			}
+
+			settings.Proctoring.Enabled = false;
+			settings.Proctoring.ScreenProctoring.Enabled = false;
+			settings.Proctoring.ShowDisclaimer = false;
+			settings.Proctoring.ShowTaskbarNotification = false;
+
+			Logger.Info("Open-book build: remote and screen proctoring are disabled - nothing is captured or transmitted to an examiner.");
 		}
 
 		private OperationResult HandleBrowserResource(Uri uri)
