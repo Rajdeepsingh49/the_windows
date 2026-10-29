@@ -2,15 +2,18 @@ name: Build & Test SEB Open-Book (Windows)
 
 # Cloud build + test for the open-book fork. There is no way to build or run this
 # Win32 / .NET Framework 4.8 / WPF application on macOS, so verification happens here:
-#   1. compile the whole codebase (via the unit-test projects, which reference every app library),
+#   1. compile the whole solution (the proven AppVeyor recipe),
 #   2. run the complete MSTest unit-test suite,
-#   3. build the Setup.msi installer (x64).
+#   3. build the Setup.msi installer and publish the x64 one as a downloadable release asset.
 # Runs on every push.
 
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-test:
@@ -30,20 +33,15 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
+      - name: Install WiX Toolset v3 (safety; usually preinstalled)
+        run: choco install wixtoolset -y --no-progress
+        continue-on-error: true
+
       - name: NuGet restore
         run: nuget restore SafeExamBrowser.sln
 
-      - name: Build app + unit-test projects (${{ matrix.platform }})
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $projects = Get-ChildItem -Directory -Filter '*.UnitTests' | ForEach-Object { Join-Path $_.FullName ($_.Name + '.csproj') }
-          foreach ($p in $projects) {
-            Write-Host "::group::Build $p"
-            msbuild "$p" /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
-            if ($LASTEXITCODE -ne 0) { throw "Build failed: $p" }
-            Write-Host "::endgroup::"
-          }
+      - name: Build solution (Release, ${{ matrix.platform }})
+        run: msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
 
       - name: Run unit tests (${{ matrix.platform }})
         shell: pwsh
@@ -67,18 +65,22 @@ jobs:
           path: TestResults/*.trx
           if-no-files-found: warn
 
-      - name: Install WiX Toolset v3 and build Setup.msi (x64, best effort)
-        if: matrix.platform == 'x64'
-        continue-on-error: true
-        run: |
-          choco install wixtoolset -y --no-progress
-          msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=x64
-
-      - name: Upload Setup.msi (x64)
-        if: matrix.platform == 'x64'
-        continue-on-error: true
+      - name: Upload Setup.msi (${{ matrix.platform }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SEB-OpenBook-x64-Setup
-          path: Setup/bin/x64/Release/Setup.msi
+          name: SEB-OpenBook-${{ matrix.platform }}-Setup
+          path: Setup/bin/${{ matrix.platform }}/Release/Setup.msi
           if-no-files-found: warn
+
+      - name: Publish x64 installer to a GitHub Release (master only)
+        if: matrix.platform == 'x64' && github.ref == 'refs/heads/master'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $msi = "Setup/bin/x64/Release/Setup.msi"
+          if (-not (Test-Path $msi)) { Write-Host "No MSI produced; skipping release."; exit 0 }
+          gh release create openbook-latest-x64 --title "SEB Open-Book - latest x64 build" --notes "Automated build from commit ${{ github.sha }}. Testing build for open-book exams - not official SEB." 2>$null
+          gh release upload openbook-latest-x64 "$msi" --clobber
+          Write-Host "Published: https://github.com/${{ github.repository }}/releases/download/openbook-latest-x64/Setup.msi"
