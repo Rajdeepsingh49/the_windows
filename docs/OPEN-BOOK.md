@@ -35,8 +35,8 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | Area | Intent | Status |
 | --- | --- | --- |
 | **Screen / remote proctoring** | Can never run; no screenshots or video ever captured or transmitted. | **Done** — forced off for every configuration (see `Runtime/Operations/Session/ConfigurationOperation.cs`). |
-| **SEB Server** | No connection to an LMS/SEB Server; no logs, pings, or screenshots sent off-device. | Planned (next stage). |
-| **"Raise hand" / proctoring notifications** | Removed from the UI. | Planned. |
+| **SEB Server** | No connection to an LMS/SEB Server; no logs, pings, or screenshots sent off-device. | **Done** — any server session is forced to a normal local session right after config load (`ConfigurationOperation`), so the server operations never connect. |
+| **"Raise hand" / proctoring notifications** | Never shown. | **Done** — Raise Hand is only added for a server session, which can no longer occur. |
 | **App switching (open-book core)** | The student may use any other application. Controlled locally by an exam lock; genuine `.seb` restrictions are still respected. | Planned. |
 | **Exam lock toggle + indicator** | A local lock/unlock shortcut with an on-screen indicator; starts locked by default. | Planned. |
 | **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | Planned. |

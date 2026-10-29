@@ -44,8 +44,9 @@ Prerequisites on the test machine: .NET Framework 4.8 runtime, Visual C++ 2015�
   **never starts** — no proctoring taskbar indicator, no "proctoring" notification, no screenshots
   cached or sent. The runtime log line "Open-book build: remote and screen proctoring are disabled"
   appears.
-- ☐ **[PENDING]** Load a config that references a **SEB Server**. Expected: no connection attempt;
-  no logs/pings/screenshots leave the machine. *(Server neutralization is a later stage.)*
+- ☐ **[NOW]** Load a config that references a **SEB Server**. Expected: no connection attempt;
+  no logs/pings/screenshots leave the machine; the session runs as a normal local session, and
+  the runtime log shows "proctoring and SEB Server are disabled".
 - ☐ **[NOW]** Logs are written only locally (under the SEB app data / log folder); nothing is uploaded.
 - ☐ **[NOW]** Capture network traffic (e.g. Fiddler/Wireshark) during an exam: no traffic to any
   proctoring/SEB-Server endpoint; only the exam/browser URLs the student visits.
