@@ -41,8 +41,13 @@ jobs:
         run: nuget restore SafeExamBrowser.sln
 
       - name: Build app + test projects, no installer (${{ matrix.platform }})
-        shell: cmd
-        run: msbuild SafeExamBrowser.sln /t:"SafeExamBrowser_Client;SafeExamBrowser_Runtime;SafeExamBrowser_Service;SafeExamBrowser_ResetUtility;SebWindowsConfig;SafeExamBrowser_Applications_UnitTests;SafeExamBrowser_Browser_UnitTests;SafeExamBrowser_Client_UnitTests;SafeExamBrowser_Communication_UnitTests;SafeExamBrowser_Configuration_UnitTests;SafeExamBrowser_Core_UnitTests;SafeExamBrowser_I18n_UnitTests;SafeExamBrowser_Lockdown_UnitTests;SafeExamBrowser_Logging_UnitTests;SafeExamBrowser_Runtime_UnitTests;SafeExamBrowser_Service_UnitTests" /p:Configuration=Release /p:Platform=${{ matrix.platform }} /property:langversion=latest /verbosity:minimal
+        shell: pwsh
+        run: |
+          $log = "build-${{ matrix.platform }}.log"
+          msbuild openbook-ci.slnf /p:Configuration=Release /p:Platform=${{ matrix.platform }} /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
+          $code = $LASTEXITCODE
+          Get-Content $log | Select-String -Pattern ': error|: warning [A-Z]|MSB\d{3,}|error :' | Select-Object -First 20 | ForEach-Object { $l = $_.Line.Trim(); Write-Host "::error::$l" }
+          exit $code
 
       - name: Run unit tests (${{ matrix.platform }})
         shell: pwsh
@@ -74,8 +79,13 @@ jobs:
       - name: Build installer Setup.msi (x64, best effort)
         if: matrix.platform == 'x64'
         continue-on-error: true
-        shell: cmd
-        run: msbuild SafeExamBrowser.sln /t:"Setup;SetupBundle" /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal
+        shell: pwsh
+        run: |
+          $log = "installer-x64.log"
+          msbuild Setup\Setup.wixproj /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
+          $code = $LASTEXITCODE
+          Get-Content $log | Select-String -Pattern ': error|MSB\d{3,}|error :' | Select-Object -First 15 | ForEach-Object { $l = $_.Line.Trim(); Write-Host "::warning::installer: $l" }
+          Write-Host "installer msbuild exit code: $code"
 
       - name: Upload Setup.msi (x64)
         if: matrix.platform == 'x64'
