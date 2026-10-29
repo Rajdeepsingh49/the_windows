@@ -97,6 +97,8 @@ jobs:
           if (Test-Path vstest-x64.log) { Get-Content vstest-x64.log -Tail 120 | Out-File $diag -Append } else { "(no vstest-x64.log)" | Out-File $diag -Append }
           gh release create ci-diagnostics --title "CI diagnostics (transient)" --notes "Transient CI build/test logs for debugging." 2>$null
           gh release upload ci-diagnostics $diag --clobber
+          if (Test-Path vstest-x64.log) { gh release upload ci-diagnostics vstest-x64.log --clobber }
+          if (Test-Path build-x64.log) { gh release upload ci-diagnostics build-x64.log --clobber }
           Write-Host "diagnostics uploaded"
 
       - name: Install WiX Toolset v3 (for the installer)
