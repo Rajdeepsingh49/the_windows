@@ -96,7 +96,7 @@ jobs:
         shell: pwsh
         run: |
           $log = "installer-x64.log"
-          msbuild SafeExamBrowser.sln /t:Setup /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
+          msbuild openbook-release.slnf /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
           $code = $LASTEXITCODE
           Get-Content $log | Select-String -Pattern ': error|MSB\d{3,}|error :|WiX|not installed' | Select-Object -First 25 | ForEach-Object { $l = $_.Line.Trim(); if ($l) { Write-Host "::error::installer: $l" } }
           exit $code
