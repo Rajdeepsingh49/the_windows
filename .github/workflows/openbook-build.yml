@@ -52,16 +52,19 @@ jobs:
       - name: Run unit tests (${{ matrix.platform }})
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
+          $ErrorActionPreference = 'Continue'
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           $vs = & $vswhere -latest -products * -property installationPath
           $vstest = Join-Path $vs 'Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
-          if (-not (Test-Path $vstest)) { throw "vstest.console.exe not found at $vstest" }
+          if (-not (Test-Path $vstest)) { Write-Host "::error::vstest.console.exe not found at $vstest"; exit 1 }
           $dlls = Get-ChildItem -Recurse -Filter '*.UnitTests.dll' | Where-Object { $_.FullName -match 'bin\\${{ matrix.platform }}\\Release' } | Select-Object -ExpandProperty FullName
-          if (-not $dlls) { throw "No unit-test assemblies found." }
-          Write-Host "Running tests in:"; $dlls | ForEach-Object { Write-Host "  $_" }
-          & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults
-          if ($LASTEXITCODE -ne 0) { throw "Unit tests failed." }
+          Write-Host "Found $($dlls.Count) test assemblies for ${{ matrix.platform }}"
+          if (-not $dlls) { Write-Host "::error::No unit-test assemblies found for ${{ matrix.platform }}"; exit 1 }
+          $log = "vstest-${{ matrix.platform }}.log"
+          & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults 2>&1 | Tee-Object -FilePath $log
+          $code = $LASTEXITCODE
+          Get-Content $log | Select-String -Pattern 'Failed!|Passed!|Total tests|Failed\s+\d|Failed:|error|Exception|No test (is|source)|could not|Unable' | Select-Object -First 30 | ForEach-Object { $l = $_.Line.Trim(); if ($l) { Write-Host "::error::$l" } }
+          exit $code
 
       - name: Upload test results (${{ matrix.platform }})
         if: always()
