@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           $log = "build-${{ matrix.platform }}.log"
-          msbuild openbook-ci.slnf /p:Configuration=Release /p:Platform=${{ matrix.platform }} /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
+          msbuild openbook-ci.slnf /p:Configuration=Debug /p:Platform=${{ matrix.platform }} /property:langversion=latest /verbosity:minimal 2>&1 | Tee-Object -FilePath $log
           $code = $LASTEXITCODE
           Get-Content $log | Select-String -Pattern ': error|: warning [A-Z]|MSB\d{3,}|error :' | Select-Object -First 20 | ForEach-Object { $l = $_.Line.Trim(); Write-Host "::error::$l" }
           exit $code
@@ -60,8 +60,8 @@ jobs:
           $all = Get-ChildItem -Path . -Recurse -Filter '*.UnitTests.dll' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
           Write-Host "Total *.UnitTests.dll found anywhere: $($all.Count)"
           $all | Select-Object -First 25 | ForEach-Object { Write-Host "::error::dll: $_" }
-          $dlls = $all | Where-Object { $_ -match "bin[\\/]${{ matrix.platform }}[\\/]Release[\\/]" }
-          if (-not $dlls) { $dlls = $all | Where-Object { $_ -match "[\\/]Release[\\/]" } }
+          $dlls = $all | Where-Object { $_ -match "bin[\\/]${{ matrix.platform }}[\\/]Debug[\\/]" }
+          if (-not $dlls) { $dlls = $all | Where-Object { $_ -match "[\\/]Debug[\\/]" } }
           Write-Host "Resolved $(@($dlls).Count) test assemblies for ${{ matrix.platform }}"
           if (-not $dlls) { Write-Host "::error::No unit-test assemblies found for ${{ matrix.platform }}"; exit 1 }
           $log = "vstest-${{ matrix.platform }}.log"
