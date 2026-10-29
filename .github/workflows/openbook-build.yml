@@ -1,8 +1,11 @@
-name: Build SEB Open-Book (Windows)
+name: Build & Test SEB Open-Book (Windows)
 
-# Cloud build for the open-book fork. Mirrors the official AppVeyor recipe
-# (nuget restore + msbuild of the whole solution) so we get a compiled build
-# and a Setup.msi without needing a local Windows machine. Runs on every push.
+# Cloud build + test for the open-book fork. There is no way to build or run this
+# Win32 / .NET Framework 4.8 / WPF application on macOS, so verification happens here:
+#   1. compile the whole codebase (via the unit-test projects, which reference every app library),
+#   2. run the complete MSTest unit-test suite,
+#   3. build the Setup.msi installer (x64).
+# Runs on every push.
 
 on:
   push:
@@ -10,12 +13,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-test:
+    name: build-test (${{ matrix.platform }})
     runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
-        platform: [x64]
+        platform: [x64, x86]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,20 +30,55 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
-      - name: Install WiX Toolset v3 (needed to build Setup.msi)
-        run: choco install wixtoolset -y --no-progress
-        continue-on-error: true
-
       - name: NuGet restore
         run: nuget restore SafeExamBrowser.sln
 
-      - name: Build solution (Release, ${{ matrix.platform }})
-        run: msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+      - name: Build app + unit-test projects (${{ matrix.platform }})
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $projects = Get-ChildItem -Directory -Filter '*.UnitTests' | ForEach-Object { Join-Path $_.FullName ($_.Name + '.csproj') }
+          foreach ($p in $projects) {
+            Write-Host "::group::Build $p"
+            msbuild "$p" /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+            if ($LASTEXITCODE -ne 0) { throw "Build failed: $p" }
+            Write-Host "::endgroup::"
+          }
 
-      - name: Upload Setup.msi
+      - name: Run unit tests (${{ matrix.platform }})
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          $vstest = Join-Path $vs 'Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
+          if (-not (Test-Path $vstest)) { throw "vstest.console.exe not found at $vstest" }
+          $dlls = Get-ChildItem -Recurse -Filter '*.UnitTests.dll' | Where-Object { $_.FullName -match 'bin\\${{ matrix.platform }}\\Release' } | Select-Object -ExpandProperty FullName
+          if (-not $dlls) { throw "No unit-test assemblies found." }
+          Write-Host "Running tests in:"; $dlls | ForEach-Object { Write-Host "  $_" }
+          & $vstest $dlls /Platform:${{ matrix.platform }} /Logger:"trx;LogFileName=tests-${{ matrix.platform }}.trx" /ResultsDirectory:TestResults
+          if ($LASTEXITCODE -ne 0) { throw "Unit tests failed." }
+
+      - name: Upload test results (${{ matrix.platform }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SEB-OpenBook-${{ matrix.platform }}-Setup
-          path: Setup/bin/${{ matrix.platform }}/Release/Setup.msi
+          name: test-results-${{ matrix.platform }}
+          path: TestResults/*.trx
+          if-no-files-found: warn
+
+      - name: Install WiX Toolset v3 and build Setup.msi (x64, best effort)
+        if: matrix.platform == 'x64'
+        continue-on-error: true
+        run: |
+          choco install wixtoolset -y --no-progress
+          msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=x64
+
+      - name: Upload Setup.msi (x64)
+        if: matrix.platform == 'x64'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEB-OpenBook-x64-Setup
+          path: Setup/bin/x64/Release/Setup.msi
           if-no-files-found: warn
