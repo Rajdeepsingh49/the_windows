@@ -1,11 +1,12 @@
 name: Build & Test SEB Open-Book (Windows)
 
 # Cloud build + test for the open-book fork. There is no way to build or run this
-# Win32 / .NET Framework 4.8 / WPF application on macOS, so verification happens here:
-#   1. compile the whole solution (the proven AppVeyor recipe),
-#   2. run the complete MSTest unit-test suite,
-#   3. build the Setup.msi installer and publish the x64 one as a downloadable release asset.
-# Runs on every push.
+# Win32 / .NET Framework 4.8 / WPF application on macOS, so verification happens here.
+#
+# The GATE (must pass) compiles every C# project and runs the full MSTest suite. The two
+# WiX installer projects (Setup, SetupBundle) are built in a SEPARATE best-effort step,
+# because GitHub's windows-2022 image no longer ships the WiX toolset and installer
+# packaging must not block the real "does the code compile and pass tests" signal.
 
 on:
   push:
@@ -33,15 +34,15 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
-      - name: Install WiX Toolset v3 (safety; usually preinstalled)
-        run: choco install wixtoolset -y --no-progress
-        continue-on-error: true
+      - name: Enable MSBuild problem matcher
+        run: echo "::add-matcher::.github/msbuild-problem-matcher.json"
 
       - name: NuGet restore
         run: nuget restore SafeExamBrowser.sln
 
-      - name: Build solution (Release, ${{ matrix.platform }})
-        run: msbuild SafeExamBrowser.sln /verbosity:minimal /property:langversion=latest /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+      - name: Build app + test projects, no installer (${{ matrix.platform }})
+        shell: cmd
+        run: msbuild SafeExamBrowser.sln /t:"SafeExamBrowser_Client;SafeExamBrowser_Runtime;SafeExamBrowser_Service;SafeExamBrowser_ResetUtility;SebWindowsConfig;SafeExamBrowser_Applications_UnitTests;SafeExamBrowser_Browser_UnitTests;SafeExamBrowser_Client_UnitTests;SafeExamBrowser_Communication_UnitTests;SafeExamBrowser_Configuration_UnitTests;SafeExamBrowser_Core_UnitTests;SafeExamBrowser_I18n_UnitTests;SafeExamBrowser_Lockdown_UnitTests;SafeExamBrowser_Logging_UnitTests;SafeExamBrowser_Runtime_UnitTests;SafeExamBrowser_Service_UnitTests" /p:Configuration=Release /p:Platform=${{ matrix.platform }} /property:langversion=latest /verbosity:minimal
 
       - name: Run unit tests (${{ matrix.platform }})
         shell: pwsh
@@ -65,16 +66,29 @@ jobs:
           path: TestResults/*.trx
           if-no-files-found: warn
 
-      - name: Upload Setup.msi (${{ matrix.platform }})
-        if: always()
+      - name: Install WiX Toolset v3 (for the installer)
+        if: matrix.platform == 'x64'
+        continue-on-error: true
+        run: choco install wixtoolset --version 3.14.1 -y --no-progress
+
+      - name: Build installer Setup.msi (x64, best effort)
+        if: matrix.platform == 'x64'
+        continue-on-error: true
+        shell: cmd
+        run: msbuild SafeExamBrowser.sln /t:"Setup;SetupBundle" /p:Configuration=Release /p:Platform=x64 /property:langversion=latest /verbosity:minimal
+
+      - name: Upload Setup.msi (x64)
+        if: matrix.platform == 'x64'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: SEB-OpenBook-${{ matrix.platform }}-Setup
-          path: Setup/bin/${{ matrix.platform }}/Release/Setup.msi
+          name: SEB-OpenBook-x64-Setup
+          path: Setup/bin/x64/Release/Setup.msi
           if-no-files-found: warn
 
       - name: Publish x64 installer to a GitHub Release (master only)
         if: matrix.platform == 'x64' && github.ref == 'refs/heads/master'
+        continue-on-error: true
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
