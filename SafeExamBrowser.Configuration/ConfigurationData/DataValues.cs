@@ -322,8 +322,16 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			// open-book purpose (default only; a genuine .seb may re-disable it).
 			settings.Security.AllowStickyKeys = true;
 			settings.Security.AllowTermination = true;
-			settings.Security.AllowWindowCapture = false;
-			settings.Security.ClipboardPolicy = ClipboardPolicy.Isolated;
+			// Open-book build: let the student screenshot / screen-record the exam window into their own
+			// tools (e.g. paste a question into ChatGPT or Claude vision). The default hides SEB from all
+			// screen capture (WDA_EXCLUDEFROMCAPTURE) - backwards for open-book, and there is no proctoring
+			// here for it to expose (default only; a genuine .seb may re-impose it via allowScreenSharing).
+			settings.Security.AllowWindowCapture = true;
+			// Open-book build: unrestricted system clipboard so the student can copy between the exam
+			// and their own tools (ChatGPT, notes, a second browser). The isolated default clears the
+			// system clipboard and only works inside the browser - backwards for open-book (default
+			// only; a genuine .seb may re-impose a stricter clipboard policy).
+			settings.Security.ClipboardPolicy = ClipboardPolicy.Allow;
 			// Open-book build: no lock screen on user-session changes (e.g. an RDP reconnect during a
 			// cloud-VM session) - friction, not a student restriction (default only).
 			settings.Security.DisableSessionChangeLockScreen = true;

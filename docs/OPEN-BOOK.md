@@ -41,6 +41,7 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | **Exam lock toggle** | A local lock/unlock shortcut; starts locked by default. | **Done** — `Ctrl+Shift+L` toggles the lock (`UserInterface.Shared/Activators/ExamLockActivator.cs`), wired through `Client/CompositionRoot.cs`, `ShellOperation` and `ShellResponsibility`. Starts locked; on lock, SEB is pulled back to the foreground so re-locking can't strand the student in another app. Windows counterpart of the macOS `Cmd+Shift+L`, and flashes a brief on-screen 🔒/🔓 indicator (`UserInterface.Shared/ExamLockIndicator.cs`). |
 | **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | **Done** — a local start page (`Browser/Content/ExamStart.html`, served by `Browser/Handlers/ResourceHandler.cs`) with one field; submitting navigates the browser, which loads a web address or hands a `seb(s)://` / `.seb` link to the existing reconfiguration pipeline. The main window also gets an address bar + back/forward. A loaded `.seb` with a real start URL is used directly. |
 | **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | **Done** — defaults relaxed in `DataValues.cs` (boundary-3-safe; a genuine `.seb` can re-impose each): VM detection off (`VirtualMachinePolicy.Allow`), remote/RDP start-up refusal off, no session-change lock screen, sticky-keys left alone, cursor-config check off, and the default 95-app auto-terminate blacklist cleared. The SEB service is already ignored (`IgnoreService`), so launch needs no admin and makes no system changes. |
+| **Clipboard & screen capture** | The student can move exam content into their own tools — copy/paste to any app, and screenshot the exam window. | **Done** — `ClipboardPolicy.Allow` and `AllowWindowCapture = true` defaults in `DataValues.cs` (boundary-3-safe; a genuine `.seb` can re-impose either). Upstream isolates the clipboard and blanks SEB in screen captures, both backwards for open-book. |
 | **Logging** | Local-only; the student's running-phase activity (page URLs, clipboard, downloads, app/window switching) is not recorded, and nothing is uploaded. | **Done** — `ExamLogGate` + `ExamLogFileWriter` suppress the running phase in the client log; start-up and shutdown lines are kept, layout and wording unchanged (boundary 1). |
 
 ### Lock / unlock (`Ctrl+Shift+L`)
@@ -84,6 +85,20 @@ at start-up. These are open-book **defaults** — a genuine `.seb` configuration
 of them (boundary 3). Relaxing the VM and remote-session gates is also what lets the build be
 smoke-tested on a cloud Windows VM. The SEB background service is ignored (`IgnoreService`), so SEB
 launches as the invoking user with no UAC prompt and makes no machine-wide changes.
+
+### Clipboard and screen capture
+
+Open-book means the student can move exam content into their own tools, so two defaults are relaxed in
+`DataValues.cs` (both boundary-3-safe — a genuine `.seb` can re-impose either):
+
+- **Clipboard** — `ClipboardPolicy.Allow` (upstream default: `Isolated`). The student can copy and
+  paste between the exam and any other application (ChatGPT, notes, a second browser). `Isolated`
+  continuously clears the system clipboard and only works inside the browser, which defeats open-book
+  use.
+- **Screen capture** — `AllowWindowCapture = true` (upstream default: `false`). The student can
+  screenshot or screen-record the exam window, e.g. to paste a question into ChatGPT or Claude vision.
+  The default activates a window guard (`WDA_EXCLUDEFROMCAPTURE`) that blanks SEB in any capture; there
+  is no proctoring in this build for it to protect against.
 
 See the commit history on `master` for the exact, reviewable diff against upstream
 (`git diff upstream/master`).
