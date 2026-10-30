@@ -77,7 +77,11 @@ If all of the above pass, the build is functionally good; the sections below are
 - ☐ Logs are written only locally (under the SEB app data / log folder); nothing is uploaded.
 - ☐ During an exam (running phase), the client log records no browsing URLs, clipboard, downloads,
   or app/window switching; start-up and shutdown entries are still present (run an exam, visit a few
-  pages, quit, then inspect the client log).
+  pages, switch apps, copy/paste, quit, then inspect the client log). App/window switching is never
+  logged at all — the application monitor does not run under the open-book default `KioskMode.None`.
+- ☐ The Chromium **engine** log is disabled: in the SEB log folder there is no CEF/`browser` engine
+  log containing visited or failed URLs (the file is absent or empty). This is the second on-device
+  log the running-phase mask cannot reach, so it is turned off at the source.
 - ☐ Capture network traffic (e.g. Fiddler/Wireshark) during an exam: no traffic to any
   proctoring/SEB-Server endpoint; only the exam/browser URLs the student visits.
 

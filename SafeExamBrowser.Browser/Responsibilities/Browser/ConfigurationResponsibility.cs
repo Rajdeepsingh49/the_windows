@@ -48,14 +48,17 @@ namespace SafeExamBrowser.Browser.Responsibilities.Browser
 
 		private CefSettings InitializeCefSettings()
 		{
-			var warning = Logger.LogLevel == LogLevel.Warning;
-			var error = Logger.LogLevel == LogLevel.Error;
 			var settings = new CefSettings();
 
 			settings.AcceptLanguageList = CultureInfo.CurrentUICulture.Name;
 			settings.CachePath = AppConfig.BrowserCachePath;
 			settings.LogFile = AppConfig.BrowserLogFilePath;
-			settings.LogSeverity = error ? LogSeverity.Error : (warning ? LogSeverity.Warning : LogSeverity.Info);
+			// Open-book build: the Chromium engine writes this log file itself, outside SEB's logger and
+			// therefore outside the running-phase ExamLogGate mask. At Info/Warning it can record visited
+			// or failed URLs on disk, which defeats the open-book privacy design, so the engine log is
+			// disabled. SEB's own (gated) log still keeps start-up, shutdown, error and tamper lines, and
+			// no proctoring/server exists in this build to transmit anything (boundary 1; docs/OPEN-BOOK.md).
+			settings.LogSeverity = LogSeverity.Disable;
 			settings.PersistSessionCookies = !Settings.DeleteCookiesOnStartup || !Settings.DeleteCookiesOnShutdown;
 			settings.UserAgent = InitializeUserAgent();
 
