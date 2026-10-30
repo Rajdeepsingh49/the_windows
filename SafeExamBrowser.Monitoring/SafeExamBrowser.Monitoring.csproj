@@ -63,6 +63,7 @@
     <Compile Include="Display\Display.cs" />
     <Compile Include="Display\DisplayMonitor.cs" />
     <Compile Include="Display\VideoOutputTechnology.cs" />
+    <Compile Include="Keyboard\ExamLockState.cs" />
     <Compile Include="Keyboard\KeyboardInterceptor.cs" />
     <Compile Include="Mouse\MouseInterceptor.cs" />
     <Compile Include="Applications\ApplicationMonitor.cs" />

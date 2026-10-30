@@ -83,6 +83,7 @@ namespace SafeExamBrowser.Client
 		private IActionCenter actionCenter;
 		private ApplicationMonitor applicationMonitor;
 		private ExamLogGate examLogGate;
+		private ExamLockState examLockState;
 		private ILogger logger;
 		private IMessageBox messageBox;
 		private INativeMethods nativeMethods;
@@ -113,6 +114,8 @@ namespace SafeExamBrowser.Client
 			actionCenter = uiFactory.CreateActionCenter();
 			context = new ClientContext();
 			context.ExamLogGate = examLogGate;
+			examLockState = new ExamLockState(startLocked: true);
+			context.ExamLockState = examLockState;
 			messageBox = BuildMessageBox();
 			nativeMethods = new NativeMethods();
 			applicationMonitor = new ApplicationMonitor(TWO_SECONDS, ModuleLogger(nameof(ApplicationMonitor)), nativeMethods, processFactory);
@@ -309,7 +312,7 @@ namespace SafeExamBrowser.Client
 
 		private IOperation BuildKeyboardInterceptorOperation()
 		{
-			var keyboardInterceptor = new KeyboardInterceptor(ModuleLogger(nameof(KeyboardInterceptor)), nativeMethods, context.Settings.Keyboard);
+			var keyboardInterceptor = new KeyboardInterceptor(ModuleLogger(nameof(KeyboardInterceptor)), nativeMethods, context.Settings.Keyboard, examLockState);
 			var operation = new KeyboardInterceptorOperation(context, keyboardInterceptor, logger);
 
 			return operation;
@@ -383,6 +386,7 @@ namespace SafeExamBrowser.Client
 			context.Activators.Add(new ActionCenterTouchActivator(ModuleLogger(nameof(ActionCenterTouchActivator)), nativeMethods));
 			context.Activators.Add(new TaskbarKeyboardActivator(ModuleLogger(nameof(TaskbarKeyboardActivator)), nativeMethods));
 			context.Activators.Add(new TaskviewKeyboardActivator(ModuleLogger(nameof(TaskviewKeyboardActivator)), nativeMethods));
+			context.Activators.Add(new ExamLockActivator(ModuleLogger(nameof(ExamLockActivator)), nativeMethods));
 			context.Activators.Add(new TerminationActivator(ModuleLogger(nameof(TerminationActivator)), nativeMethods));
 			context.Activators.Add(new VerificatorActivator(ModuleLogger(nameof(VerificatorActivator)), nativeMethods));
 

@@ -23,12 +23,14 @@ namespace SafeExamBrowser.Monitoring.Keyboard
 		private readonly ILogger logger;
 		private readonly INativeMethods nativeMethods;
 		private readonly KeyboardSettings settings;
+		private readonly ExamLockState lockState;
 
-		public KeyboardInterceptor(ILogger logger, INativeMethods nativeMethods, KeyboardSettings settings)
+		public KeyboardInterceptor(ILogger logger, INativeMethods nativeMethods, KeyboardSettings settings, ExamLockState lockState)
 		{
 			this.logger = logger;
 			this.nativeMethods = nativeMethods;
 			this.settings = settings;
+			this.lockState = lockState;
 		}
 
 		public void Start()
@@ -49,7 +51,14 @@ namespace SafeExamBrowser.Monitoring.Keyboard
 			var block = false;
 			var key = KeyInterop.KeyFromVirtualKey(keyCode);
 
-			block |= key == Key.Apps;
+			// Open-book build: while the exam is locked, the keys used to switch to other applications
+			// are blocked so SEB behaves as a strict kiosk. While unlocked (Ctrl+Shift+L) they fall back
+			// to the configured keyboard settings so the student may use any other software. A genuine
+			// restriction in the configuration (e.g. AllowAltTab = false) is still honoured even when
+			// unlocked (see docs/OPEN-BOOK.md, boundary 3).
+			var locked = lockState == null || lockState.IsLocked;
+
+			block |= key == Key.Apps && locked;
 			block |= key == Key.Escape && modifier == KeyModifier.None && !settings.AllowEsc;
 			block |= key == Key.F1 && !settings.AllowF1;
 			block |= key == Key.F2 && !settings.AllowF2;
@@ -63,17 +72,17 @@ namespace SafeExamBrowser.Monitoring.Keyboard
 			block |= key == Key.F10 && !settings.AllowF10;
 			block |= key == Key.F11 && !settings.AllowF11;
 			block |= key == Key.F12 && !settings.AllowF12;
-			block |= key == Key.LWin && !settings.AllowSystemKey;
+			block |= key == Key.LWin && (locked || !settings.AllowSystemKey);
 			block |= key == Key.PrintScreen && !settings.AllowPrintScreen;
-			block |= key == Key.RWin && !settings.AllowSystemKey;
+			block |= key == Key.RWin && (locked || !settings.AllowSystemKey);
 
-			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Escape && !settings.AllowAltEsc;
+			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Escape && (locked || !settings.AllowAltEsc);
 			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.F4 && !settings.AllowAltF4;
-			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Space;
-			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Tab;
+			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Space && locked;
+			block |= modifier.HasFlag(KeyModifier.Alt) && key == Key.Tab && (locked || !settings.AllowAltTab);
 
 			block |= modifier.HasFlag(KeyModifier.Ctrl) && key == Key.C && !settings.AllowCtrlC;
-			block |= modifier.HasFlag(KeyModifier.Ctrl) && key == Key.Escape && !settings.AllowCtrlEsc;
+			block |= modifier.HasFlag(KeyModifier.Ctrl) && key == Key.Escape && (locked || !settings.AllowCtrlEsc);
 			block |= modifier.HasFlag(KeyModifier.Ctrl) && key == Key.V && !settings.AllowCtrlV;
 			block |= modifier.HasFlag(KeyModifier.Ctrl) && key == Key.X && !settings.AllowCtrlX;
 

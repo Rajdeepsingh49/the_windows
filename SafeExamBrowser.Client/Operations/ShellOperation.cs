@@ -136,6 +136,12 @@ namespace SafeExamBrowser.Client.Operations
 					terminationActivator.Start();
 				}
 
+				// Open-book build: the Ctrl+Shift+L lock toggle is always available (see docs/OPEN-BOOK.md).
+				if (activator is IExamLockActivator examLockActivator)
+				{
+					examLockActivator.Start();
+				}
+
 				if (Context.Settings.UserInterface.Taskbar.EnableTaskbar && activator is ITaskbarActivator taskbarActivator)
 				{
 					taskbar.Register(taskbarActivator);

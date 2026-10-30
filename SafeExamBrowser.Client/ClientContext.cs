@@ -18,6 +18,7 @@ using SafeExamBrowser.Configuration.Contracts.Cryptography;
 using SafeExamBrowser.Core.Contracts.ResponsibilityModel;
 using SafeExamBrowser.Integrity.Contracts;
 using SafeExamBrowser.Logging;
+using SafeExamBrowser.Monitoring.Keyboard;
 using SafeExamBrowser.Proctoring.Contracts;
 using SafeExamBrowser.Server.Contracts;
 using SafeExamBrowser.Settings;
@@ -52,6 +53,11 @@ namespace SafeExamBrowser.Client
 		/// Open-book build: shared gate that controls what reaches the local log during the exam.
 		/// </summary>
 		internal ExamLogGate ExamLogGate { get; set; }
+
+		/// <summary>
+		/// Open-book build: shared state of the Ctrl+Shift+L exam lock toggle.
+		/// </summary>
+		internal ExamLockState ExamLockState { get; set; }
 
 		/// <summary>
 		/// The browser application.

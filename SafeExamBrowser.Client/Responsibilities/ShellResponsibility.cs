@@ -70,6 +70,11 @@ namespace SafeExamBrowser.Client.Responsibilities
 			{
 				activator.Activated -= TerminationActivator_Activated;
 			}
+
+			foreach (var activator in Context.Activators.OfType<IExamLockActivator>())
+			{
+				activator.Activated -= ExamLockActivator_Activated;
+			}
 		}
 
 		private void RegisterEvents()
@@ -81,6 +86,11 @@ namespace SafeExamBrowser.Client.Responsibilities
 			foreach (var activator in Context.Activators.OfType<ITerminationActivator>())
 			{
 				activator.Activated += TerminationActivator_Activated;
+			}
+
+			foreach (var activator in Context.Activators.OfType<IExamLockActivator>())
+			{
+				activator.Activated += ExamLockActivator_Activated;
 			}
 		}
 
@@ -127,6 +137,28 @@ namespace SafeExamBrowser.Client.Responsibilities
 			PauseActivators();
 			TryInitiateShutdown();
 			ResumeActivators();
+		}
+
+		private void ExamLockActivator_Activated()
+		{
+			var state = Context.ExamLockState;
+
+			if (state == null)
+			{
+				return;
+			}
+
+			var locked = state.Toggle();
+
+			Logger.Info($"Open-book build: exam {(locked ? "locked" : "unlocked")} via shortcut.");
+
+			if (locked)
+			{
+				// Open-book build: re-assert SEB in the foreground so re-locking while another
+				// application is focused cannot strand the student there with the switching keys
+				// disabled (see docs/OPEN-BOOK.md).
+				Context.Browser?.Focus(true);
+			}
 		}
 
 		private bool TryInitiateShutdown()

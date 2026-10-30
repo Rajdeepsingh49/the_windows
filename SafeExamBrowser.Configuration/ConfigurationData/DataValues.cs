@@ -254,11 +254,14 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Display.IgnoreError = false;
 			settings.Display.InternalDisplayOnly = false;
 
-			settings.Keyboard.AllowAltEsc = false;
+			// Open-book build: the app-switching keys default to allowed so that unlocking (Ctrl+Shift+L)
+			// actually frees the student to switch to and launch other software; while locked the keyboard
+			// interceptor blocks them regardless of these values (see docs/OPEN-BOOK.md).
+			settings.Keyboard.AllowAltEsc = true;
 			settings.Keyboard.AllowAltF4 = false;
 			settings.Keyboard.AllowAltTab = true;
 			settings.Keyboard.AllowCtrlC = true;
-			settings.Keyboard.AllowCtrlEsc = false;
+			settings.Keyboard.AllowCtrlEsc = true;
 			settings.Keyboard.AllowCtrlV = true;
 			settings.Keyboard.AllowCtrlX = true;
 			settings.Keyboard.AllowEsc = true;
@@ -276,7 +279,7 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Keyboard.AllowF12 = true;
 			settings.Keyboard.AllowInjected = false;
 			settings.Keyboard.AllowPrintScreen = false;
-			settings.Keyboard.AllowSystemKey = false;
+			settings.Keyboard.AllowSystemKey = true;
 
 			settings.LogLevel = LogLevel.Debug;
 
@@ -307,7 +310,11 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Security.AllowWindowCapture = false;
 			settings.Security.ClipboardPolicy = ClipboardPolicy.Isolated;
 			settings.Security.DisableSessionChangeLockScreen = false;
-			settings.Security.KioskMode = KioskMode.CreateNewDesktop;
+			// Open-book build: no desktop isolation and no explorer-shell kill, so the student can reach
+			// and launch any other software and SEB does not police running applications; the exam is
+			// instead held by the Ctrl+Shift+L keyboard lock. A genuine .seb configuration may still set
+			// a stricter kiosk mode, which is respected (see docs/OPEN-BOOK.md).
+			settings.Security.KioskMode = KioskMode.None;
 			settings.Security.VerifyCursorConfiguration = true;
 			settings.Security.VerifySessionIntegrity = true;
 			settings.Security.VirtualMachinePolicy = VirtualMachinePolicy.Deny;
