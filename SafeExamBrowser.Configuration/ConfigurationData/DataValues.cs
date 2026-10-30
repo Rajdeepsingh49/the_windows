@@ -197,6 +197,13 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Applications.Blacklist.Add(new BlacklistApplication { ExecutableName = "winvnc.exe", OriginalName = "winvnc.exe" });
 			settings.Applications.Blacklist.Add(new BlacklistApplication { ExecutableName = "Zoom.exe", OriginalName = "Zoom.exe" });
 
+			// Open-book build: clear SEB's default application blacklist (remote-control / screen-share /
+			// recording / comms tools) so the student's own running software is never prompted-to-terminate
+			// at start-up. A loaded .seb may still define its own blacklist, which is applied on top of this
+			// and therefore still enforced (see docs/OPEN-BOOK.md). Clearing - rather than deleting the
+			// upstream list - keeps future upstream merges clean.
+			settings.Applications.Blacklist.Clear();
+
 			settings.Browser.AdditionalWindow.AllowAddressBar = false;
 			settings.Browser.AdditionalWindow.AllowBackwardNavigation = true;
 			settings.Browser.AdditionalWindow.AllowDeveloperConsole = false;
@@ -311,19 +318,27 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 
 			settings.Security.AllowApplicationLogAccess = false;
 			settings.Security.AllowReconfiguration = false;
-			settings.Security.AllowStickyKeys = false;
+			// Open-book build: leave Windows accessibility (sticky keys) alone - start-up friction with no
+			// open-book purpose (default only; a genuine .seb may re-disable it).
+			settings.Security.AllowStickyKeys = true;
 			settings.Security.AllowTermination = true;
 			settings.Security.AllowWindowCapture = false;
 			settings.Security.ClipboardPolicy = ClipboardPolicy.Isolated;
-			settings.Security.DisableSessionChangeLockScreen = false;
+			// Open-book build: no lock screen on user-session changes (e.g. an RDP reconnect during a
+			// cloud-VM session) - friction, not a student restriction (default only).
+			settings.Security.DisableSessionChangeLockScreen = true;
 			// Open-book build: no desktop isolation and no explorer-shell kill, so the student can reach
 			// and launch any other software and SEB does not police running applications; the exam is
 			// instead held by the Ctrl+Shift+L keyboard lock. A genuine .seb configuration may still set
 			// a stricter kiosk mode, which is respected (see docs/OPEN-BOOK.md).
 			settings.Security.KioskMode = KioskMode.None;
-			settings.Security.VerifyCursorConfiguration = true;
+			// Open-book build: don't abort start-up over a non-standard mouse cursor - anti-tamper friction
+			// with no open-book purpose (default only).
+			settings.Security.VerifyCursorConfiguration = false;
 			settings.Security.VerifySessionIntegrity = true;
-			settings.Security.VirtualMachinePolicy = VirtualMachinePolicy.Deny;
+			// Open-book build: allow running in a virtual machine (open-book is not anti-cheat, and the
+			// build is tested/used on cloud VMs). A genuine .seb may still set Deny, which is respected.
+			settings.Security.VirtualMachinePolicy = VirtualMachinePolicy.Allow;
 
 			settings.Server.Invigilation.ForceRaiseHandMessage = false;
 			settings.Server.Invigilation.ShowRaiseHandNotification = true;
@@ -339,7 +354,9 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Service.DisableNetworkOptions = true;
 			settings.Service.DisablePasswordChange = true;
 			settings.Service.DisablePowerOptions = true;
-			settings.Service.DisableRemoteConnections = true;
+			// Open-book build: don't refuse to start in a remote / RDP session (needed to run on a cloud VM;
+			// open-book is not anti-cheat). A genuine .seb may still disable remote connections.
+			settings.Service.DisableRemoteConnections = false;
 			settings.Service.DisableSignout = true;
 			settings.Service.DisableTaskManager = true;
 			settings.Service.DisableUserLock = true;

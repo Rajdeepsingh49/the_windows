@@ -40,7 +40,7 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | **App switching (open-book core)** | The student may use any other application. Controlled locally by an exam lock; genuine `.seb` restrictions are still respected. | **Done** — the exam-default kiosk mode is `None` (no separate desktop, explorer shell left intact, application monitor off), so the student can launch and switch to any software; the lock decides access through the keyboard interceptor (`Monitoring/Keyboard/KeyboardInterceptor.cs` + `ExamLockState`). A stricter `.seb` kiosk/keyboard restriction is still respected (boundary 3). |
 | **Exam lock toggle** | A local lock/unlock shortcut; starts locked by default. | **Done** — `Ctrl+Shift+L` toggles the lock (`UserInterface.Shared/Activators/ExamLockActivator.cs`), wired through `Client/CompositionRoot.cs`, `ShellOperation` and `ShellResponsibility`. Starts locked; on lock, SEB is pulled back to the foreground so re-locking can't strand the student in another app. Windows counterpart of the macOS `Cmd+Shift+L`, and flashes a brief on-screen 🔒/🔓 indicator (`UserInterface.Shared/ExamLockIndicator.cs`). |
 | **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | **Done** — a local start page (`Browser/Content/ExamStart.html`, served by `Browser/Handlers/ResourceHandler.cs`) with one field; submitting navigates the browser, which loads a web address or hands a `seb(s)://` / `.seb` link to the existing reconfiguration pipeline. The main window also gets an address bar + back/forward. A loaded `.seb` with a real start URL is used directly. |
-| **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | Planned. |
+| **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | **Done** — defaults relaxed in `DataValues.cs` (boundary-3-safe; a genuine `.seb` can re-impose each): VM detection off (`VirtualMachinePolicy.Allow`), remote/RDP start-up refusal off, no session-change lock screen, sticky-keys left alone, cursor-config check off, and the default 95-app auto-terminate blacklist cleared. The SEB service is already ignored (`IgnoreService`), so launch needs no admin and makes no system changes. |
 | **Logging** | Local-only; the student's running-phase activity (page URLs, clipboard, downloads, app/window switching) is not recorded, and nothing is uploaded. | **Done** — `ExamLogGate` + `ExamLogFileWriter` suppress the running phase in the client log; start-up and shutdown lines are kept, layout and wording unchanged (boundary 1). |
 
 ### Lock / unlock (`Ctrl+Shift+L`)
@@ -74,6 +74,16 @@ The page is served locally by the browser with no network round-trip (the browse
 `ResourceHandler` answers the internal address `https://seb.openbook/start` from the embedded
 `Browser/Content/ExamStart.html`). `.seb` files on disk are opened the usual way (double-click / file
 association), not through a file picker on the page.
+
+### Running environment (VMs, remote sessions, start-up friction)
+
+Open-book is not an anti-cheat product, so the build no longer refuses to run in a virtual machine or
+over a remote (RDP) session, no longer disables Windows accessibility (sticky keys) or aborts over a
+non-standard mouse cursor, and does not prompt to terminate the student's already-running applications
+at start-up. These are open-book **defaults** — a genuine `.seb` configuration may still re-impose any
+of them (boundary 3). Relaxing the VM and remote-session gates is also what lets the build be
+smoke-tested on a cloud Windows VM. The SEB background service is ignored (`IgnoreService`), so SEB
+launches as the invoking user with no UAC prompt and makes no machine-wide changes.
 
 See the commit history on `master` for the exact, reviewable diff against upstream
 (`git diff upstream/master`).
