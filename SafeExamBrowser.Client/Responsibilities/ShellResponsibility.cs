@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+using System;
 using System.ComponentModel;
 using System.Linq;
 using SafeExamBrowser.Configuration.Contracts.Cryptography;
@@ -14,6 +15,7 @@ using SafeExamBrowser.Logging.Contracts;
 using SafeExamBrowser.UserInterface.Contracts;
 using SafeExamBrowser.UserInterface.Contracts.MessageBox;
 using SafeExamBrowser.UserInterface.Contracts.Shell;
+using SafeExamBrowser.UserInterface.Contracts.Windows;
 
 namespace SafeExamBrowser.Client.Responsibilities
 {
@@ -24,6 +26,8 @@ namespace SafeExamBrowser.Client.Responsibilities
 		private readonly IMessageBox messageBox;
 		private readonly ITaskbar taskbar;
 		private readonly IUserInterfaceFactory uiFactory;
+
+		private IExamLockIndicator examLockIndicator;
 
 		public ShellResponsibility(
 			IActionCenter actionCenter,
@@ -158,6 +162,20 @@ namespace SafeExamBrowser.Client.Responsibilities
 				// application is focused cannot strand the student there with the switching keys
 				// disabled (see docs/OPEN-BOOK.md).
 				Context.Browser?.Focus(true);
+			}
+
+			try
+			{
+				if (examLockIndicator == null)
+				{
+					examLockIndicator = uiFactory.CreateExamLockIndicator();
+				}
+
+				examLockIndicator.Flash(locked);
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"Open-book build: failed to show the exam lock indicator ({e.Message}).");
 			}
 		}
 

@@ -158,5 +158,10 @@ namespace SafeExamBrowser.UserInterface.Mobile
 		{
 			return Application.Current.Dispatcher.Invoke(() => Guard(new VerificatorOverlay()));
 		}
+
+		internal IExamLockIndicator CreateExamLockIndicator()
+		{
+			return Application.Current.Dispatcher.Invoke(() => (IExamLockIndicator) new ExamLockIndicator());
+		}
 	}
 }

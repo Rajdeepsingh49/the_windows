@@ -159,5 +159,10 @@ namespace SafeExamBrowser.UserInterface.Contracts
 		/// Creates a new overlay to display verification codes.
 		/// </summary>
 		IVerificatorOverlay CreateVerificatorOverlay();
+
+		/// <summary>
+		/// Open-book build: creates the overlay that flashes the exam lock / unlock state (Ctrl+Shift+L).
+		/// </summary>
+		IExamLockIndicator CreateExamLockIndicator();
 	}
 }

@@ -38,7 +38,7 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | **SEB Server** | No connection to an LMS/SEB Server; no logs, pings, or screenshots sent off-device. | **Done** — any server session is forced to a normal local session right after config load (`ConfigurationOperation`), so the server operations never connect. |
 | **"Raise hand" / proctoring notifications** | Never shown. | **Done** — Raise Hand is only added for a server session, which can no longer occur. |
 | **App switching (open-book core)** | The student may use any other application. Controlled locally by an exam lock; genuine `.seb` restrictions are still respected. | **Done** — the exam-default kiosk mode is `None` (no separate desktop, explorer shell left intact, application monitor off), so the student can launch and switch to any software; the lock decides access through the keyboard interceptor (`Monitoring/Keyboard/KeyboardInterceptor.cs` + `ExamLockState`). A stricter `.seb` kiosk/keyboard restriction is still respected (boundary 3). |
-| **Exam lock toggle** | A local lock/unlock shortcut; starts locked by default. | **Done** — `Ctrl+Shift+L` toggles the lock (`UserInterface.Shared/Activators/ExamLockActivator.cs`), wired through `Client/CompositionRoot.cs`, `ShellOperation` and `ShellResponsibility`. Starts locked; on lock, SEB is pulled back to the foreground so re-locking can't strand the student in another app. Windows counterpart of the macOS `Cmd+Shift+L`. A fading on-screen padlock indicator is still to come. |
+| **Exam lock toggle** | A local lock/unlock shortcut; starts locked by default. | **Done** — `Ctrl+Shift+L` toggles the lock (`UserInterface.Shared/Activators/ExamLockActivator.cs`), wired through `Client/CompositionRoot.cs`, `ShellOperation` and `ShellResponsibility`. Starts locked; on lock, SEB is pulled back to the foreground so re-locking can't strand the student in another app. Windows counterpart of the macOS `Cmd+Shift+L`, and flashes a brief on-screen 🔒/🔓 indicator (`UserInterface.Shared/ExamLockIndicator.cs`). |
 | **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | Planned. |
 | **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | Planned. |
 | **Logging** | Local-only; the student's running-phase activity (page URLs, clipboard, downloads, app/window switching) is not recorded, and nothing is uploaded. | **Done** — `ExamLogGate` + `ExamLogFileWriter` suppress the running phase in the client log; start-up and shutdown lines are kept, layout and wording unchanged (boundary 1). |
@@ -50,8 +50,10 @@ key, Ctrl+Esc, the menu key and similar app-switching keys are blocked, so the s
 the exam. Pressing **`Ctrl+Shift+L`** unlocks it — those keys fall back to the exam configuration
 (open-book default = allowed), so the student can switch to and launch any other software: ChatGPT,
 notes, a second browser, and so on. Pressing `Ctrl+Shift+L` again re-locks and pulls SEB back to
-the front. There is no password; it is a single toggle, the Windows counterpart of the macOS fork's
-`Cmd+Shift+L`. The toggle is not written to the local log during the exam (running-phase masking,
+the front. Each toggle briefly flashes a 🔒 **Locked** (red) or 🔓 **Unlocked** (green) overlay in the
+centre of the screen so the student can see the current state; it fades after about a second and
+never steals focus. There is no password; it is a single toggle, the Windows counterpart of the
+macOS fork's `Cmd+Shift+L`. The toggle is not written to the local log during the exam (running-phase masking,
 boundary 1). Students are told the shortcut out-of-band; it is deliberately not shown on the start
 page.
 

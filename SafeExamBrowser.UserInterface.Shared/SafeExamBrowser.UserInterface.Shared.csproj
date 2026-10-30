@@ -72,6 +72,7 @@
     <Compile Include="Activators\TaskviewKeyboardActivator.cs" />
     <Compile Include="Activators\TerminationActivator.cs" />
     <Compile Include="Activators\TouchActivator.cs" />
+    <Compile Include="ExamLockIndicator.cs" />
     <Compile Include="Activators\VerificatorActivator.cs" />
     <Compile Include="Guardable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

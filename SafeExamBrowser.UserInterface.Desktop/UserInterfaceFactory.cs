@@ -176,6 +176,11 @@ namespace SafeExamBrowser.UserInterface.Desktop
 			return windowFactory.CreateVerificatorOverlay();
 		}
 
+		public IExamLockIndicator CreateExamLockIndicator()
+		{
+			return windowFactory.CreateExamLockIndicator();
+		}
+
 		private void InitializeFontAwesome()
 		{
 			// To be able to use FontAwesome in XAML icon resources, we need to make sure that the FontAwesome.WPF assembly is loaded into
