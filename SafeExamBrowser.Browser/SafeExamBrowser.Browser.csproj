@@ -237,6 +237,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Content\BlockedContent.html" />
     <EmbeddedResource Include="Content\BlockedPage.html" />
+    <EmbeddedResource Include="Content\ExamStart.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

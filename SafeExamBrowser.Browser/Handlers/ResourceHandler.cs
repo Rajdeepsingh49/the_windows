@@ -70,6 +70,11 @@ namespace SafeExamBrowser.Browser.Handlers
 
 		protected override IResourceHandler GetResourceHandler(IWebBrowser webBrowser, IBrowser browser, IFrame frame, IRequest request)
 		{
+			if (IsOpenBookStartPage(request))
+			{
+				return CefSharp.ResourceHandler.FromString(contentLoader.LoadStartPage());
+			}
+
 			if (Block(request))
 			{
 				return ResourceHandlerFor(request.ResourceType);
@@ -144,6 +149,16 @@ namespace SafeExamBrowser.Browser.Handlers
 
 				request.Headers = headers;
 			}
+		}
+
+		private bool IsOpenBookStartPage(IRequest request)
+		{
+			// Open-book build: serve the local exam start page (ExamStart.html) for the open-book start
+			// URL instead of fetching anything from the network (see docs/OPEN-BOOK.md). A configuration
+			// that sets a real exam start URL is loaded directly and never resolves to this host.
+			return request.ResourceType == ResourceType.MainFrame
+				&& Uri.TryCreate(request.Url, UriKind.Absolute, out var uri)
+				&& uri.Host.Equals("seb.openbook", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private bool Block(IRequest request)

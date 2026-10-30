@@ -82,6 +82,18 @@ namespace SafeExamBrowser.Browser.Content
 			}
 		}
 
+		internal string LoadStartPage()
+		{
+			var assembly = Assembly.GetAssembly(typeof(ContentLoader));
+			var path = $"{typeof(ContentLoader).Namespace}.ExamStart.html";
+
+			using (var stream = assembly.GetManifestResourceStream(path))
+			using (var reader = new StreamReader(stream))
+			{
+				return reader.ReadToEnd();
+			}
+		}
+
 		internal string LoadClipboard()
 		{
 			if (clipboard == default)

@@ -39,7 +39,7 @@ The transformation mirrors the macOS fork and is being ported in stages.
 | **"Raise hand" / proctoring notifications** | Never shown. | **Done** — Raise Hand is only added for a server session, which can no longer occur. |
 | **App switching (open-book core)** | The student may use any other application. Controlled locally by an exam lock; genuine `.seb` restrictions are still respected. | **Done** — the exam-default kiosk mode is `None` (no separate desktop, explorer shell left intact, application monitor off), so the student can launch and switch to any software; the lock decides access through the keyboard interceptor (`Monitoring/Keyboard/KeyboardInterceptor.cs` + `ExamLockState`). A stricter `.seb` kiosk/keyboard restriction is still respected (boundary 3). |
 | **Exam lock toggle** | A local lock/unlock shortcut; starts locked by default. | **Done** — `Ctrl+Shift+L` toggles the lock (`UserInterface.Shared/Activators/ExamLockActivator.cs`), wired through `Client/CompositionRoot.cs`, `ShellOperation` and `ShellResponsibility`. Starts locked; on lock, SEB is pulled back to the foreground so re-locking can't strand the student in another app. Windows counterpart of the macOS `Cmd+Shift+L`, and flashes a brief on-screen 🔒/🔓 indicator (`UserInterface.Shared/ExamLockIndicator.cs`). |
-| **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | Planned. |
+| **Exam start page** | One field that accepts any address, `seb(s)://` link, or `.seb` file. | **Done** — a local start page (`Browser/Content/ExamStart.html`, served by `Browser/Handlers/ResourceHandler.cs`) with one field; submitting navigates the browser, which loads a web address or hands a `seb(s)://` / `.seb` link to the existing reconfiguration pipeline. The main window also gets an address bar + back/forward. A loaded `.seb` with a real start URL is used directly. |
 | **Intrusive startup blockers** | Drop start-up steps that change the student's system or demand permissions beyond what an exam needs. | Planned. |
 | **Logging** | Local-only; the student's running-phase activity (page URLs, clipboard, downloads, app/window switching) is not recorded, and nothing is uploaded. | **Done** — `ExamLogGate` + `ExamLogFileWriter` suppress the running phase in the client log; start-up and shutdown lines are kept, layout and wording unchanged (boundary 1). |
 
@@ -60,6 +60,20 @@ page.
 > If a genuine `.seb` configuration disables a key or forces a stricter kiosk mode, unlocking does
 > **not** re-enable it (boundary 3). For normal open-book use, run the default configuration or a
 > `.seb` that does not force `CreateNewDesktop`.
+
+### Exam start page
+
+With no exam configuration loaded, the main window opens on a local **start page** with a single
+field: type any web address, a `seb://` / `sebs://` link, or a link to a `.seb` file and press
+**Start exam**. A plain web address loads as a page; a `seb(s)://` or `.seb` link is handed to SEB's
+normal reconfiguration pipeline. The main window also carries an address bar (with back / forward),
+so the student can navigate freely at any point — this is open-book. If a loaded `.seb` configuration
+sets a real start URL, that URL is loaded directly and the start page is skipped.
+
+The page is served locally by the browser with no network round-trip (the browser's
+`ResourceHandler` answers the internal address `https://seb.openbook/start` from the embedded
+`Browser/Content/ExamStart.html`). `.seb` files on disk are opened the usual way (double-click / file
+association), not through a file picker on the page.
 
 See the commit history on `master` for the exact, reviewable diff against upstream
 (`git diff upstream/master`).

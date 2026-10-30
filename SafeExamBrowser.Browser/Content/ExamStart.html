@@ -1,0 +1,107 @@
+<!--
+	Copyright (c) 2026 ETH Zürich, IT Services
+
+	This Source Code Form is subject to the terms of the Mozilla Public
+	License, v. 2.0. If a copy of the MPL was not distributed with this
+	file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+	Open-book build: local exam start page (see docs/OPEN-BOOK.md). Served locally by
+	SafeExamBrowser.Browser/Handlers/ResourceHandler.cs for the open-book start URL; the field simply
+	navigates the browser to the typed address. Plain web addresses load as pages; seb:// / sebs:// /
+	.seb links are picked up by the browser's existing reconfiguration pipeline. Windows counterpart of
+	the macOS fork's bundled ExamStart.html.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Start exam</title>
+	<style>
+		:root { color-scheme: light dark; }
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background: #f4f5f7;
+			color: #1b1c1f;
+		}
+		main { width: 100%; max-width: 560px; padding: 40px; text-align: center; }
+		h1 { font-size: 26px; font-weight: 600; margin: 0 0 8px; }
+		p.sub { margin: 0 0 28px; font-size: 15px; color: #595d66; }
+		form { display: flex; gap: 10px; }
+		input[type="text"] {
+			flex: 1;
+			min-width: 0;
+			padding: 14px 16px;
+			font-size: 16px;
+			color: inherit;
+			background: #ffffff;
+			border: 1px solid #c7c9cf;
+			border-radius: 10px;
+		}
+		input[type="text"]:focus {
+			outline: none;
+			border-color: #3b74e0;
+			box-shadow: 0 0 0 3px rgba(59, 116, 224, 0.2);
+		}
+		button {
+			padding: 14px 22px;
+			font-size: 16px;
+			font-weight: 600;
+			color: #ffffff;
+			background: #3b74e0;
+			border: none;
+			border-radius: 10px;
+			cursor: pointer;
+		}
+		button:hover { background: #2f63c8; }
+		ul { margin: 22px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.7; color: #797d86; }
+		@media (prefers-color-scheme: dark) {
+			body { background: #1b1d21; color: #e8e9ec; }
+			p.sub { color: #a9adb6; }
+			input[type="text"] { background: #26282d; border-color: #3a3d44; }
+			ul { color: #8b8f98; }
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Start your exam</h1>
+		<p class="sub">Open-book mode &mdash; you may use any website or app you like.</p>
+		<form id="start">
+			<input id="link" type="text" autofocus autocomplete="off" spellcheck="false"
+				placeholder="https://exam.example.edu/&hellip;   or   seb://&hellip;">
+			<button type="submit">Start exam</button>
+		</form>
+		<ul>
+			<li>Any web address works, and so do <b>seb://</b> / <b>sebs://</b> links and links to a <b>.seb</b> file.</li>
+			<li>Have a <b>.seb</b> configuration file? Open the file directly and SEB will load it.</li>
+		</ul>
+	</main>
+	<script>
+		document.getElementById("start").addEventListener("submit", function (event) {
+			event.preventDefault();
+
+			var link = document.getElementById("link").value.trim();
+
+			if (!link) {
+				return;
+			}
+
+			// Prepend https:// when the student typed a bare address with no scheme (http://, https://,
+			// seb://, sebs:// are all left as-is). The browser then loads a web address as a page, or
+			// hands a seb(s):// / .seb link to its existing reconfiguration pipeline.
+			if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(link)) {
+				link = "https://" + link;
+			}
+
+			window.location.href = link;
+		});
+	</script>
+</body>
+</html>

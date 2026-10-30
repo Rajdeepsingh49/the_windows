@@ -223,25 +223,31 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 			settings.Browser.DeleteCookiesOnShutdown = true;
 			settings.Browser.DeleteCookiesOnStartup = true;
 			settings.Browser.EnableBrowser = true;
-			settings.Browser.MainWindow.AllowAddressBar = false;
-			settings.Browser.MainWindow.AllowBackwardNavigation = false;
+			// Open-book build: the main window gets an address bar + back/forward navigation so the
+			// student can browse freely and has a one-field "type any address / seb(s):// / .seb link
+			// and go" (see docs/OPEN-BOOK.md).
+			settings.Browser.MainWindow.AllowAddressBar = true;
+			settings.Browser.MainWindow.AllowBackwardNavigation = true;
 			settings.Browser.MainWindow.AllowDeveloperConsole = false;
-			settings.Browser.MainWindow.AllowForwardNavigation = false;
+			settings.Browser.MainWindow.AllowForwardNavigation = true;
 			settings.Browser.MainWindow.AllowReloading = true;
 			settings.Browser.MainWindow.FullScreenMode = false;
 			settings.Browser.MainWindow.RelativeHeight = 100;
 			settings.Browser.MainWindow.RelativeWidth = 100;
 			settings.Browser.MainWindow.ShowHomeButton = false;
 			settings.Browser.MainWindow.ShowReloadWarning = true;
-			settings.Browser.MainWindow.ShowToolbar = false;
-			settings.Browser.MainWindow.UrlPolicy = UrlPolicy.Never;
+			settings.Browser.MainWindow.ShowToolbar = true;
+			settings.Browser.MainWindow.UrlPolicy = UrlPolicy.Always;
 			settings.Browser.PopupPolicy = PopupPolicy.Allow;
 			settings.Browser.Proxy.Policy = ProxyPolicy.System;
 			settings.Browser.ResetOnQuitUrl = false;
 			settings.Browser.SendBrowserExamKey = false;
 			settings.Browser.SendConfigurationKey = false;
 			settings.Browser.ShowFileSystemElementPath = true;
-			settings.Browser.StartUrl = "https://www.safeexambrowser.org/start";
+			// Open-book build: default to the local exam start page (served by the browser's
+			// ResourceHandler) instead of the stock online start page. A loaded .seb that sets a real
+			// start URL overrides this and is loaded directly (see docs/OPEN-BOOK.md).
+			settings.Browser.StartUrl = "https://seb.openbook/start";
 			settings.Browser.UseCustomUserAgent = false;
 			settings.Browser.UseIsolatedClipboard = true;
 			settings.Browser.UseQueryParameter = false;
