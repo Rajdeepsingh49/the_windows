@@ -10,6 +10,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using SafeExamBrowser.Configuration.Contracts;
 
 namespace SafeExamBrowser.Runtime
@@ -56,6 +57,11 @@ namespace SafeExamBrowser.Runtime
 		protected override void OnStartup(StartupEventArgs e)
 		{
 			base.OnStartup(e);
+
+			// Open-book build: force WPF to render in software. Hardware (DirectX) rendering produces black
+			// and flickering windows on some hybrid-GPU laptops (e.g. HP Omen with NVIDIA Optimus). SEB's
+			// windows are simple, so software rendering is a safe, reliable fix (see docs/OPEN-BOOK.md).
+			RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
 
 			ShutdownMode = ShutdownMode.OnExplicitShutdown;
 

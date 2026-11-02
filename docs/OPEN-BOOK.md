@@ -100,6 +100,22 @@ Open-book means the student can move exam content into their own tools, so two d
   The default activates a window guard (`WDA_EXCLUDEFROMCAPTURE`) that blanks SEB in any capture; there
   is no proctoring in this build for it to protect against.
 
+### Graphics (hybrid-GPU laptops)
+
+On some hybrid-GPU laptops — notably HP Omen and similar NVIDIA Optimus machines — SEB's windows
+rendered black and flickered (the "installing kiosk" window and the browser), and the session could
+stall and then close. This is a hardware-rendering problem, not an exam-logic one, so the build forces
+**software rendering** in two places:
+
+- **WPF windows** — `RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly` at start-up in both GUI
+  processes (`SafeExamBrowser.Runtime/App.cs`, `SafeExamBrowser.Client/App.cs`).
+- **Browser engine** — the Chromium engine is launched with `--disable-gpu` and
+  `--disable-gpu-compositing` (`Browser/Responsibilities/Browser/ConfigurationResponsibility.cs`).
+
+SEB's windows are simple and the exam content does not need the GPU, so software rendering is a safe,
+reliable default here. If the start-up/shutdown logs under `%LOCALAPPDATA%\SafeExamBrowser\Logs` show a
+different cause on a given machine, that is tracked separately.
+
 See the commit history on `master` for the exact, reviewable diff against upstream
 (`git diff upstream/master`).
 

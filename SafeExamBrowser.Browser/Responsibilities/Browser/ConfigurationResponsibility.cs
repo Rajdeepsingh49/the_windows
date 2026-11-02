@@ -69,6 +69,13 @@ namespace SafeExamBrowser.Browser.Responsibilities.Browser
 			settings.CefCommandLineArgs.Add("touch-events", "enabled");
 			settings.CefCommandLineArgs.Add("use-fake-ui-for-media-stream");
 
+			// Open-book build: disable GPU acceleration in the browser engine. Hardware compositing renders
+			// a black / flickering browser on some hybrid-GPU laptops (e.g. HP Omen with NVIDIA Optimus);
+			// software rendering is slower but reliable and the exam content here does not need the GPU
+			// (see docs/OPEN-BOOK.md).
+			settings.CefCommandLineArgs.Add("disable-gpu");
+			settings.CefCommandLineArgs.Add("disable-gpu-compositing");
+
 			if (!Settings.AllowPageZoom)
 			{
 				settings.CefCommandLineArgs.Add("disable-pinch");
