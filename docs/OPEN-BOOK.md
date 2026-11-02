@@ -111,6 +111,11 @@ stall and then close. This is a hardware-rendering problem, not an exam-logic on
   processes (`SafeExamBrowser.Runtime/App.cs`, `SafeExamBrowser.Client/App.cs`).
 - **Browser engine** — the Chromium engine is launched with `--disable-gpu` and
   `--disable-gpu-compositing` (`Browser/Responsibilities/Browser/ConfigurationResponsibility.cs`).
+- **Display-configuration lock screen** — the same hybrid-GPU laptops enumerate an extra or transient
+  display at start-up, which tripped SEB's display lock screen (a full-screen overlay that blocks
+  start-up and then terminates). The open-book display defaults are relaxed in `DataValues.cs`
+  (`AllowedDisplays = 10`, `IgnoreError = true`), so a normal multi-display or transient configuration
+  no longer locks the exam. A genuine `.seb` can re-impose a single-display rule (boundary 3).
 
 SEB's windows are simple and the exam content does not need the GPU, so software rendering is a safe,
 reliable default here. If the start-up/shutdown logs under `%LOCALAPPDATA%\SafeExamBrowser\Logs` show a

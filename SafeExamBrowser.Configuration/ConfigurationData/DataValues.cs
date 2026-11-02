@@ -262,9 +262,15 @@ namespace SafeExamBrowser.Configuration.ConfigurationData
 
 			settings.ConfigurationMode = ConfigurationMode.Exam;
 
-			settings.Display.AllowedDisplays = 1;
+			// Open-book build: do not lock the exam over the display configuration. Hybrid-GPU laptops
+			// (e.g. HP Omen / NVIDIA Optimus) enumerate an extra or transient display at start-up, which
+			// tripped SEB's display-configuration lock screen (a full-screen black overlay that blocks
+			// start-up and then terminates); and a second monitor is fine for open-book anyway. So allow
+			// many displays and treat a display read error as acceptable rather than locking. Defaults
+			// only - a genuine .seb may re-impose AllowedDisplays = 1 / IgnoreError = false (boundary 3).
+			settings.Display.AllowedDisplays = 10;
 			settings.Display.AlwaysOn = true;
-			settings.Display.IgnoreError = false;
+			settings.Display.IgnoreError = true;
 			settings.Display.InternalDisplayOnly = false;
 
 			// Open-book build: the app-switching keys default to allowed so that unlocking (Ctrl+Shift+L)
